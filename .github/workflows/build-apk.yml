@@ -1,3 +1,4 @@
+
 name: Build RecipeNest APK
 
 on:
@@ -14,24 +15,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
       - name: Unpack Android project
         run: |
           mkdir -p project
           unzip -o RecipeNest-Android-Starter.zip -d project
-          find project -maxdepth 6 -type f | sort | head -200
 
       - name: Build APK
         run: |
-          WRAPPER="$(find project -type f -name gradlew -print -quit)"
-          if [ -z "$WRAPPER" ]; then
-            echo "The ZIP is missing the Gradle build wrapper."
-            exit 1
-          fi
-          chmod +x "$WRAPPER"
-          cd "$(dirname "$WRAPPER")"
-          ./gradlew --no-daemon assembleDebug
+          cd project/RecipeNest-Android
+          gradle --no-daemon assembleDebug
 
       - uses: actions/upload-artifact@v4
         with:
           name: RecipeNest-debug-apk
-          path: project/**/build/outputs/apk/debug/*.apk
+          path: project/RecipeNest-Android/app/build/outputs/apk/debug/*.apk
