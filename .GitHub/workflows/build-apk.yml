@@ -1,1 +1,52 @@
 
+name: Build RecipeNest APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'RecipeNest-Android-Starter.zip'
+      - '.github/workflows/build-APK.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository files
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Unpack Android project
+        run: |
+          mkdir -p project
+          unzip -o RecipeNest-Android-Starter.zip -d project
+          echo "Files found in ZIP:"
+          find project -maxdepth 5 -type f | sort | head -200
+
+      - name: Build debug APK
+        run: |
+          WRAPPER="$(find project -type f -name gradlew -print -quit)"
+          if [ -z "$WRAPPER" ]; then
+            echo "ERROR: No gradlew file found in the ZIP."
+            echo "We need to inspect the ZIP and fix the Android project."
+            exit 1
+          fi
+          chmod +x "$WRAPPER"
+          PROJECT_DIR="$(dirname "$WRAPPER")"
+          cd "$PROJECT_DIR"
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RecipeNest-debug-apk
+          path: project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
